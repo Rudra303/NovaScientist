@@ -1,4 +1,4 @@
-# 🧪 Open CoScientist Agents
+# 🧪 NovaScientist Agents
 
 A comprehensive multi-agent system for AI-driven scientific discovery based on Google DeepMind's [AI co-scientist](https://arxiv.org/abs/2502.18864), built with LangGraph and [GPT Researcher](https://github.com/assafelovic/gpt-researcher). The aim is for this system to accelerate scientific research through collaborative AI agents that generate, critique, rank, and evolve scientific hypotheses using tournament-style competition.
 
@@ -37,13 +37,13 @@ This implementation uses `Gemini 2.5 Pro`, `Claude Sonnet 4`, and `o3` in collab
 
 ### Install from PyPI (Coming Soon)
 ```bash
-pip install open-coscientist-agents
+pip install NovaScientist
 ```
 
 ### Install from Source
 ```bash
-git clone https://github.com/conradry/open-coscientist-agents.git
-cd open-coscientist-agents
+git clone https://github.com/conradry/NovaScientist.git
+cd NovaScientist
 pip install -e .
 ```
 
@@ -89,15 +89,15 @@ Features include:
 ### Start a research run in Python
 ```python
 import asyncio
-from coscientist.framework import CoscientistConfig, CoscientistFramework
-from coscientist.global_state import CoscientistState, CoscientistStateManager
+from novascientist.framework import NovaScientistConfig, NovaScientistFramework
+from novascientist.global_state import NovaScientistState, NovaScientistStateManager
 
 goal = "How does the gut microbiome influence rheumatoid arthritis and can probiotics help to mitigate symptoms? If so, which ones are promising?"
-initial_state = CoscientistState(goal=goal)
+initial_state = NovaScientistState(goal=goal)
 
-config = CoscientistConfig()
-state_manager = CoscientistStateManager(initial_state)
-cosci = CoscientistFramework(config, state_manager)
+config = NovaScientistConfig()
+state_manager = NovaScientistStateManager(initial_state)
+cosci = NovaScientistFramework(config, state_manager)
 
 final_report, final_meta_review = asyncio.run(cosci.run())
 ```

@@ -11,10 +11,10 @@ from typing import TypedDict, Union
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
-from coscientist import multiturn
-from coscientist.common import load_prompt, parse_hypothesis_markdown
-from coscientist.custom_types import ParsedHypothesis
-from coscientist.reasoning_types import ReasoningType
+from novascientist import multiturn
+from novascientist.common import load_prompt, parse_hypothesis_markdown
+from novascientist.custom_types import ParsedHypothesis
+from novascientist.reasoning_types import ReasoningType
 
 
 class IndependentState(TypedDict):

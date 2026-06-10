@@ -1,38 +1,38 @@
 import asyncio
 import os
 
-from coscientist.framework import CoscientistConfig, CoscientistFramework
-from coscientist.global_state import CoscientistState, CoscientistStateManager
+from novascientist.framework import NovaScientistConfig, NovaScientistFramework
+from novascientist.global_state import NovaScientistState, NovaScientistStateManager
 
 
 def _get_done_file_path(goal: str) -> str:
     """Gets the path for the 'done' file for a given goal."""
-    goal_hash = CoscientistState._hash_goal(goal)
+    goal_hash = NovaScientistState._hash_goal(goal)
     # This assumes _OUTPUT_DIR is consistent.
     output_dir = os.path.join(
-        os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist")),
+        os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist")),
         goal_hash,
     )
     return os.path.join(output_dir, "done.txt")
 
 
-def coscientist_process_target(goal: str):
+def novascientist_process_target(goal: str):
     """The target function for the multiprocessing.Process."""
     try:
         # This will fail if the directory exists, which is what we want.
-        initial_state = CoscientistState(goal=goal)
-        config = CoscientistConfig()
-        state_manager = CoscientistStateManager(initial_state)
-        cosci = CoscientistFramework(config, state_manager)
+        initial_state = NovaScientistState(goal=goal)
+        config = NovaScientistConfig()
+        state_manager = NovaScientistStateManager(initial_state)
+        cosci = NovaScientistFramework(config, state_manager)
 
         # Run the framework
         asyncio.run(cosci.run())
 
     except Exception as e:
         # Log error to a file in the goal directory
-        goal_hash = CoscientistState._hash_goal(goal)
+        goal_hash = NovaScientistState._hash_goal(goal)
         output_dir = os.path.join(
-            os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist")),
+            os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist")),
             goal_hash,
         )
         if not os.path.exists(output_dir):
@@ -46,11 +46,11 @@ def coscientist_process_target(goal: str):
             f.write("done")
 
 
-def check_coscientist_status(goal: str) -> str:
-    """Checks the status of a Coscientist run."""
-    goal_hash = CoscientistState._hash_goal(goal)
+def check_novascientist_status(goal: str) -> str:
+    """Checks the status of a NovaScientist run."""
+    goal_hash = NovaScientistState._hash_goal(goal)
     output_dir = os.path.join(
-        os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist")),
+        os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist")),
         goal_hash,
     )
 
@@ -66,9 +66,9 @@ def check_coscientist_status(goal: str) -> str:
     return "running"
 
 
-def get_coscientist_results(goal: str) -> tuple[str, str]:
-    """Gets the results from a completed Coscientist run."""
-    state = CoscientistState.load_latest(goal=goal)
+def get_novascientist_results(goal: str) -> tuple[str, str]:
+    """Gets the results from a completed NovaScientist run."""
+    state = NovaScientistState.load_latest(goal=goal)
     if state and state.final_report and state.meta_reviews:
         # These are TypedDicts, access by key.
         final_report_text = state.final_report.get(
@@ -81,11 +81,11 @@ def get_coscientist_results(goal: str) -> tuple[str, str]:
     return "Results not found.", "Results not found."
 
 
-def cleanup_coscientist_run(goal: str):
+def cleanup_novascientist_run(goal: str):
     """Cleans up files after a run."""
-    goal_hash = CoscientistState._hash_goal(goal)
+    goal_hash = NovaScientistState._hash_goal(goal)
     output_dir = os.path.join(
-        os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist")),
+        os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist")),
         goal_hash,
     )
     done_file = os.path.join(output_dir, "done.txt")

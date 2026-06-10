@@ -7,8 +7,8 @@ def display_final_report_page(state):
 
     Parameters
     ----------
-    state : CoscientistState
-        The loaded Coscientist state containing the final report
+    state : NovaScientistState
+        The loaded NovaScientist state containing the final report
     """
     st.header("📋 Final Report")
 
@@ -18,7 +18,7 @@ def display_final_report_page(state):
         st.markdown("""
         ## Final Report Page
         
-        This page displays the final research report generated when the Coscientist system completes its research:
+        This page displays the final research report generated when the NovaScientist system completes its research:
         
         - **Comprehensive Summary**: Complete analysis of all hypotheses and findings
         - **Top Hypotheses**: Detailed review of the highest-ranked hypotheses

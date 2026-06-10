@@ -7,8 +7,8 @@ def display_supervisor_page(state):
 
     Parameters
     ----------
-    state : CoscientistState
-        The loaded Coscientist state containing supervisor decisions and actions
+    state : NovaScientistState
+        The loaded NovaScientist state containing supervisor decisions and actions
     """
     st.header("🎯 Supervisor Decisions")
 

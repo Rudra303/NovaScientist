@@ -3,33 +3,33 @@ import multiprocessing
 import os
 
 import streamlit as st
-from background import _get_done_file_path, check_coscientist_status
+from background import _get_done_file_path, check_novascientist_status
 from common import get_available_states
 
-from coscientist.framework import CoscientistConfig, CoscientistFramework
-from coscientist.global_state import CoscientistState, CoscientistStateManager
+from novascientist.framework import NovaScientistConfig, NovaScientistFramework
+from novascientist.global_state import NovaScientistState, NovaScientistStateManager
 
 
-def coscientist_resume_target(goal: str):
-    """The target function for resuming a Coscientist process."""
+def novascientist_resume_target(goal: str):
+    """The target function for resuming a NovaScientist process."""
     try:
         # Load the existing state instead of creating a new one
-        initial_state = CoscientistState.load_latest(goal=goal)
+        initial_state = NovaScientistState.load_latest(goal=goal)
         if initial_state is None:
             raise Exception(f"No existing state found for goal: {goal}")
 
-        config = CoscientistConfig()
-        state_manager = CoscientistStateManager(initial_state)
-        cosci = CoscientistFramework(config, state_manager)
+        config = NovaScientistConfig()
+        state_manager = NovaScientistStateManager(initial_state)
+        cosci = NovaScientistFramework(config, state_manager)
 
         # Run the framework
         asyncio.run(cosci.run())
 
     except Exception as e:
         # Log error to a file in the goal directory
-        goal_hash = CoscientistState._hash_goal(goal)
+        goal_hash = NovaScientistState._hash_goal(goal)
         output_dir = os.path.join(
-            os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist")),
+            os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist")),
             goal_hash,
         )
         if not os.path.exists(output_dir):
@@ -48,7 +48,7 @@ def display_resume_page():
     st.header("🔄 Resume from Checkpoint")
 
     st.markdown("""
-    Resume a Coscientist research process from where it left off. This page allows you to:
+    Resume a NovaScientist research process from where it left off. This page allows you to:
     
     - Select an existing research goal that has been started
     - Check if the research is already completed
@@ -88,17 +88,17 @@ def display_resume_page():
 
             try:
                 # Load the latest state to check if finished
-                state = CoscientistState.load_latest(goal=selected_goal)
+                state = NovaScientistState.load_latest(goal=selected_goal)
                 if state is None:
                     st.error("❌ No state found for this goal. Cannot resume.")
                     return
 
                 # Create state manager to check if finished
-                state_manager = CoscientistStateManager(state)
+                state_manager = NovaScientistStateManager(state)
                 is_finished = state_manager.is_finished
 
                 # Check running status
-                status = check_coscientist_status(selected_goal)
+                status = check_novascientist_status(selected_goal)
 
                 if is_finished:
                     st.success("✅ This research goal has already been completed!")
@@ -161,7 +161,7 @@ def display_resume_page():
                 try:
                     # Start the resume process
                     st.session_state.resume_process = multiprocessing.Process(
-                        target=coscientist_resume_target, args=(selected_goal,)
+                        target=novascientist_resume_target, args=(selected_goal,)
                     )
                     st.session_state.resume_process.start()
                     st.session_state.resume_goal = selected_goal
@@ -189,7 +189,7 @@ def display_resume_page():
 
         else:
             # Process has finished
-            status = check_coscientist_status(st.session_state.resume_goal)
+            status = check_novascientist_status(st.session_state.resume_goal)
             if status == "done":
                 st.success(
                     f"✅ Research completed successfully for: {st.session_state.resume_goal[:50]}..."

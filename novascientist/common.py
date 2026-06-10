@@ -3,7 +3,7 @@ import re
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from coscientist.custom_types import ParsedHypothesis
+from novascientist.custom_types import ParsedHypothesis
 
 _env = Environment(
     loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "prompts")),

@@ -4,14 +4,14 @@ with open("README.md", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="open-coscientist-agents",
+    name="NovaScientist",
     version="0.0.1",
-    author="conradry",
-    author_email="",  # Add your email if you want to include it
+    author="Rudra Pratap Singh",
+    author_email="rudraofficial303@gmail.com",  # Add your email if you want to include it
     description="Implementation of multi-agent system for AI co-scientist",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/conradry/open-coscientist-agents",
+    url="https://github.com/Rudra303/NovaScientist",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

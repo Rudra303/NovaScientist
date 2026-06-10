@@ -7,8 +7,8 @@ def display_literature_review_page(state):
 
     Parameters
     ----------
-    state : CoscientistState
-        The loaded Coscientist state containing literature review data
+    state : NovaScientistState
+        The loaded NovaScientist state containing literature review data
     """
     st.header("📚 Literature Review")
 

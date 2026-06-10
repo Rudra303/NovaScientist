@@ -31,8 +31,8 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, StateGraph
 
-from coscientist.common import load_prompt
-from coscientist.custom_types import ParsedHypothesis, ReviewedHypothesis
+from novascientist.common import load_prompt
+from novascientist.custom_types import ParsedHypothesis, ReviewedHypothesis
 
 
 class ReflectionState(TypedDict):

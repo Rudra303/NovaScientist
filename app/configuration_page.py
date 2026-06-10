@@ -8,17 +8,17 @@ from langchain_openai import ChatOpenAI
 
 # Import the background process functions
 from background import (
-    check_coscientist_status,
-    cleanup_coscientist_run,
-    coscientist_process_target,
-    get_coscientist_results,
+    check_novascientist_status,
+    cleanup_novascientist_run,
+    novascientist_process_target,
+    get_novascientist_results,
 )
 
 # Import the configuration agent and required models
-from coscientist.configuration_agent import ConfigurationChatManager
+from novascientist.configuration_agent import ConfigurationChatManager
 
-# Import coscientist framework components
-from coscientist.global_state import CoscientistState
+# Import novascientist framework components
+from novascientist.global_state import NovaScientistState
 
 
 def get_llm_options():
@@ -53,14 +53,14 @@ def display_configuration_page():
         st.session_state.conversation_started = False
     if "refined_goal" not in st.session_state:
         st.session_state.refined_goal = ""
-    if "coscientist_running" not in st.session_state:
-        st.session_state.coscientist_running = False
-    if "coscientist_result" not in st.session_state:
-        st.session_state.coscientist_result = None
-    if "coscientist_process" not in st.session_state:
-        st.session_state.coscientist_process = None
-    if "coscientist_error" not in st.session_state:
-        st.session_state.coscientist_error = None
+    if "novascientist_running" not in st.session_state:
+        st.session_state.novascientist_running = False
+    if "novascientist_result" not in st.session_state:
+        st.session_state.novascientist_result = None
+    if "novascientist_process" not in st.session_state:
+        st.session_state.novascientist_process = None
+    if "novascientist_error" not in st.session_state:
+        st.session_state.novascientist_error = None
 
     # Configuration section
     st.subheader("🔧 Configuration")
@@ -115,15 +115,15 @@ def display_configuration_page():
         if st.session_state.conversation_started:
             if st.button("🔄 Reset Conversation"):
                 if (
-                    st.session_state.coscientist_process
-                    and st.session_state.coscientist_process.is_alive()
+                    st.session_state.novascientist_process
+                    and st.session_state.novascientist_process.is_alive()
                 ):
-                    st.session_state.coscientist_process.terminate()
+                    st.session_state.novascientist_process.terminate()
 
                 # Clear the goal directory if a goal was set
                 if st.session_state.refined_goal:
                     try:
-                        CoscientistState.clear_goal_directory(
+                        NovaScientistState.clear_goal_directory(
                             st.session_state.refined_goal
                         )
                         st.info(
@@ -136,10 +136,10 @@ def display_configuration_page():
                 st.session_state.conversation_started = False
                 st.session_state.chat_history = []
                 st.session_state.refined_goal = ""
-                st.session_state.coscientist_running = False
-                st.session_state.coscientist_result = None
-                st.session_state.coscientist_process = None
-                st.session_state.coscientist_error = None
+                st.session_state.novascientist_running = False
+                st.session_state.novascientist_result = None
+                st.session_state.novascientist_process = None
+                st.session_state.novascientist_error = None
                 st.rerun()
 
     # Chat interface
@@ -179,30 +179,30 @@ def display_configuration_page():
                     )
 
             with col2:
-                # Launch coscientist button
-                if not st.session_state.coscientist_running:
-                    if st.button("🚀 Launch Coscientist", type="primary"):
+                # Launch novascientist button
+                if not st.session_state.novascientist_running:
+                    if st.button("🚀 Launch NovaScientist", type="primary"):
                         try:
                             # Ensure the directory is clean before starting
-                            CoscientistState.clear_goal_directory(refined_goal)
+                            NovaScientistState.clear_goal_directory(refined_goal)
 
                             process = multiprocessing.Process(
-                                target=coscientist_process_target, args=(refined_goal,)
+                                target=novascientist_process_target, args=(refined_goal,)
                             )
                             process.start()
-                            st.session_state.coscientist_process = process
-                            st.session_state.coscientist_running = True
+                            st.session_state.novascientist_process = process
+                            st.session_state.novascientist_running = True
                             st.session_state.refined_goal = refined_goal
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Failed to launch Coscientist: {e}")
+                            st.error(f"Failed to launch NovaScientist: {e}")
 
                 else:
-                    st.button("🚀 Coscientist Running...", disabled=True)
+                    st.button("🚀 NovaScientist Running...", disabled=True)
 
-            # Handle coscientist execution
-            if st.session_state.coscientist_running:
-                with st.spinner("🔬 Coscientist is running in the background..."):
+            # Handle novascientist execution
+            if st.session_state.novascientist_running:
+                with st.spinner("🔬 NovaScientist is running in the background..."):
                     # Give it a moment before the first check
                     time.sleep(5)
                     st.rerun()  # Rerun to check status
@@ -210,58 +210,58 @@ def display_configuration_page():
             # Check status if it was running
             if (
                 st.session_state.refined_goal
-                and not st.session_state.coscientist_result
+                and not st.session_state.novascientist_result
             ):
-                status = check_coscientist_status(st.session_state.refined_goal)
+                status = check_novascientist_status(st.session_state.refined_goal)
 
                 if status == "done":
-                    st.session_state.coscientist_running = False
+                    st.session_state.novascientist_running = False
                     try:
                         with st.spinner("Fetching results..."):
-                            final_report, meta_review = get_coscientist_results(
+                            final_report, meta_review = get_novascientist_results(
                                 st.session_state.refined_goal
                             )
-                            st.session_state.coscientist_result = {
+                            st.session_state.novascientist_result = {
                                 "final_report": final_report,
                                 "meta_review": meta_review,
                             }
-                            cleanup_coscientist_run(st.session_state.refined_goal)
-                        st.success("🎉 Coscientist completed successfully!")
+                            cleanup_novascientist_run(st.session_state.refined_goal)
+                        st.success("🎉 NovaScientist completed successfully!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error fetching results: {e}")
-                        st.session_state.coscientist_error = str(e)
+                        st.session_state.novascientist_error = str(e)
 
                 elif status.startswith("error:"):
-                    st.session_state.coscientist_running = False
+                    st.session_state.novascientist_running = False
                     error_message = status.replace("error: ", "")
-                    st.session_state.coscientist_error = error_message
-                    cleanup_coscientist_run(st.session_state.refined_goal)
-                    st.error(f"Coscientist run failed: {error_message}")
+                    st.session_state.novascientist_error = error_message
+                    cleanup_novascientist_run(st.session_state.refined_goal)
+                    st.error(f"NovaScientist run failed: {error_message}")
                     st.rerun()
 
-                elif status == "running" and st.session_state.coscientist_running:
+                elif status == "running" and st.session_state.novascientist_running:
                     st.info(
-                        "Coscientist is running. Feel free to navigate away or check back later."
+                        "NovaScientist is running. Feel free to navigate away or check back later."
                     )
                     if st.button("Refresh Status"):
                         st.rerun()
 
             # Display error if it occurred
-            if st.session_state.coscientist_error:
-                st.error(f"Coscientist failed: {st.session_state.coscientist_error}")
+            if st.session_state.novascientist_error:
+                st.error(f"NovaScientist failed: {st.session_state.novascientist_error}")
 
             # Display results if available
-            if st.session_state.coscientist_result is not None:
-                st.markdown("### 📊 Coscientist Results")
-                st.json(st.session_state.coscientist_result)
+            if st.session_state.novascientist_result is not None:
+                st.markdown("### 📊 NovaScientist Results")
+                st.json(st.session_state.novascientist_result)
 
                 # Reset button to run again
-                if st.button("🔄 Run Coscientist Again"):
-                    st.session_state.coscientist_result = None
-                    st.session_state.coscientist_running = False
-                    st.session_state.coscientist_process = None
-                    st.session_state.coscientist_error = None
+                if st.button("🔄 Run NovaScientist Again"):
+                    st.session_state.novascientist_result = None
+                    st.session_state.novascientist_running = False
+                    st.session_state.novascientist_process = None
+                    st.session_state.novascientist_error = None
                     st.rerun()
 
         else:
@@ -301,7 +301,7 @@ def display_configuration_page():
         3. **Click "Start New Conversation"** to begin the interactive refinement process
         4. **Chat with the agent** to refine and improve your research goal
         5. **Receive your refined goal** when the conversation is complete
-        6. **Launch Coscientist** with your refined goal to begin the research process
+        6. **Launch NovaScientist** with your refined goal to begin the research process
         
         ### What the Configuration Agent Does
         

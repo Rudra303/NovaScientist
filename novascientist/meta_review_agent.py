@@ -24,9 +24,9 @@ from typing import TypedDict
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
-from coscientist.common import load_prompt
-from coscientist.custom_types import ReviewedHypothesis
-from coscientist.ranking_agent import EloTournament
+from novascientist.common import load_prompt
+from novascientist.custom_types import ReviewedHypothesis
+from novascientist.ranking_agent import EloTournament
 
 
 class MetaReviewTournamentState(TypedDict):

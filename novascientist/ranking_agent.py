@@ -25,9 +25,9 @@ from typing import Optional  # Add Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from coscientist import multiturn
-from coscientist.common import load_prompt
-from coscientist.custom_types import RankingMatchResult, ReviewedHypothesis
+from novascientist import multiturn
+from novascientist.common import load_prompt
+from novascientist.custom_types import RankingMatchResult, ReviewedHypothesis
 
 # Constants
 DEFAULT_ELO = 1200

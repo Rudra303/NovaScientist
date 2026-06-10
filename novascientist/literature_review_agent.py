@@ -17,7 +17,7 @@ from gpt_researcher.utils.enum import Tone
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
-from coscientist.common import load_prompt
+from novascientist.common import load_prompt
 
 
 class LiteratureReviewState(TypedDict):

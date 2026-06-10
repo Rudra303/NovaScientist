@@ -1,5 +1,5 @@
 """
-The overall framework that takes a CoscientistStateManager from global_state.py,
+The overall framework that takes a NovaScientistStateManager from global_state.py,
 setups the agents, and organizes the multi-agent system. The framework will be controlled
 by a supervisor agent.
 """
@@ -7,6 +7,7 @@ by a supervisor agent.
 import logging
 import math
 import random
+import asyncio
 
 import numpy as np
 from langchain_anthropic import ChatAnthropic
@@ -15,22 +16,23 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from coscientist.evolution_agent import build_evolution_agent
-from coscientist.final_report_agent import build_final_report_agent
-from coscientist.generation_agent import (
+from novascientist.evolution_agent import build_evolution_agent
+from novascientist.final_report_agent import build_final_report_agent
+from novascientist.generation_agent import (
     CollaborativeConfig,
     IndependentConfig,
     build_generation_agent,
 )
-from coscientist.global_state import CoscientistStateManager
-from coscientist.literature_review_agent import build_literature_review_agent
-from coscientist.meta_review_agent import build_meta_review_agent
-from coscientist.reasoning_types import ReasoningType
-from coscientist.reflection_agent import build_deep_verification_agent
-from coscientist.supervisor_agent import build_supervisor_agent
+from novascientist.global_state import NovaScientistStateManager
+from novascientist.literature_review_agent import build_literature_review_agent
+from novascientist.meta_review_agent import build_meta_review_agent
+from novascientist.reasoning_types import ReasoningType
+from novascientist.reflection_agent import build_deep_verification_agent
+from novascientist.supervisor_agent import build_supervisor_agent
+from novascientist.ml_scheduler import MultiArmedBanditScheduler
 
 # Generally reasoning models are better suited for the scientific reasoning
-# tasks entailed by the Coscientist system.
+# tasks entailed by the NovaScientist system.
 _SMARTER_LLM_POOL = {
     "o3": ChatOpenAI(model="o3", max_tokens=50_000, max_retries=3),
     "gemini-2.5-pro": ChatGoogleGenerativeAI(
@@ -58,9 +60,9 @@ _CHEAPER_LLM_POOL = {
 }
 
 
-class CoscientistConfig:
+class NovaScientistConfig:
     """
-    Configuration for the Coscientist system.
+    Configuration for the NovaScientist system.
 
     Note that the config for GPTResearcher which is used throughout the system
     is defined in `researcher_config.json`.
@@ -122,18 +124,19 @@ class CoscientistConfig:
             self.specialist_fields = specialist_fields
 
 
-class CoscientistFramework:
+class NovaScientistFramework:
     """
-    The framework that takes a CoscientistStateManager from global_state.py,
+    The framework that takes a NovaScientistStateManager from global_state.py,
     setups the agents, and organizes the multi-agent system. The framework will be controlled
     by a supervisor agent.
     """
 
     def __init__(
-        self, config: CoscientistConfig, state_manager: CoscientistStateManager
+        self, config: NovaScientistConfig, state_manager: NovaScientistStateManager
     ):
         self.config = config
         self.state_manager = state_manager
+        self.bandit_scheduler = MultiArmedBanditScheduler(self.state_manager._state._output_dir)
 
     def list_generation_llm_names(self) -> list[str]:
         """
@@ -188,7 +191,7 @@ class CoscientistFramework:
             resolution=resolution, min_weight=min_weight
         )
 
-    def process_reflection_queue(self) -> None:
+    async def process_reflection_queue(self) -> None:
         """
         Process all hypotheses in the reflection queue through deep verification.
 
@@ -196,6 +199,7 @@ class CoscientistFramework:
         runs them through deep verification, and adds the reviewed hypotheses
         to the state manager.
         """
+        tasks = []
         while not self.state_manager.reflection_queue_is_empty:
             # This pops from the reflection queue until it's empty
             initial_reflection_state = self.state_manager.next_reflection_state()
@@ -206,27 +210,30 @@ class CoscientistFramework:
                 parallel=False,
                 checkpointer=None,
             )
-            final_reflection_state = reflection_agent.invoke(initial_reflection_state)
+            tasks.append(reflection_agent.ainvoke(initial_reflection_state))
+            
+        results = await asyncio.gather(*tasks)
+        for final_reflection_state in results:
             if final_reflection_state["passed_initial_filter"]:
                 self.state_manager.add_reviewed_hypothesis(
                     final_reflection_state["reviewed_hypothesis"]
                 )
                 self.state_manager.advance_reviewed_hypothesis()
 
-    def _generate_new_hypothesis(self) -> None:
+    async def _generate_new_hypothesis(self) -> dict:
         """
-        Run the hypothesis generation for a given mode and config.
+        Run the hypothesis generation for a given mode and config using the ML Scheduler.
         """
-        # TODO: The mode and roles should be selected by the supervisor agent.
-        # Randomly pick a mode, a reasoning type, and a specialist field.
-        mode = random.choice(self.list_generation_modes())
+        mode, reasoning_type_str = self.bandit_scheduler.get_strategy(
+            self.list_generation_modes(), self.list_reasoning_types()
+        )
+        
         if mode == "independent":
             llm_name = random.choice(self.list_generation_llm_names())
-            reasoning_type = random.choice(self.list_reasoning_types())
             specialist_field = random.choice(self.list_specialist_fields())
             config = IndependentConfig(
                 llm=self.config.generation_agent_llms[llm_name],
-                reasoning_type=getattr(ReasoningType, reasoning_type),
+                reasoning_type=getattr(ReasoningType, reasoning_type_str),
                 field=specialist_field,
             )
             first_agent_name = None
@@ -235,7 +242,9 @@ class CoscientistFramework:
             specialist_fields = np.random.choice(
                 self.list_specialist_fields(), 2
             ).tolist()
-            reasoning_types = np.random.choice(self.list_reasoning_types(), 2).tolist()
+            # For collaborative, we use the selected reasoning type for both, or randomly select a second one
+            second_rt = random.choice(self.list_reasoning_types())
+            reasoning_types = [reasoning_type_str, second_rt]
 
             agent_names = [
                 f"{llm_name}_{field}"
@@ -256,25 +265,21 @@ class CoscientistFramework:
             )
             first_agent_name = agent_names[0]
 
-        # TODO: Make this async
         generation_agent = build_generation_agent(mode, config)
         initial_generation_state = self.state_manager.next_generation_state(
             mode, first_agent_name
         )
-        final_generation_state = generation_agent.invoke(initial_generation_state)
-        self.state_manager.add_generated_hypothesis(
-            final_generation_state["hypothesis"]
-        )
+        return await generation_agent.ainvoke(initial_generation_state)
 
     async def start(self, n_hypotheses: int = 8) -> None:
         """
-        Starts the Coscientist system with a fixed number of initial
+        Starts the NovaScientist system with a fixed number of initial
         hypotheses.
         """
         assert n_hypotheses >= 2, "Must generate at least two hypotheses to start"
         if self.state_manager.is_started:
             raise ValueError(
-                "Coscientist system has already been started. "
+                "NovaScientist system has already been started. "
                 f"Use one of {self.available_actions()} instead!"
             )
 
@@ -310,12 +315,17 @@ class CoscientistFramework:
         """
         Generate new hypotheses.
         """
-        for _ in range(n_hypotheses):
-            self._generate_new_hypothesis()
+        tasks = [self._generate_new_hypothesis() for _ in range(n_hypotheses)]
+        results = await asyncio.gather(*tasks)
+        
+        for final_generation_state in results:
+            self.state_manager.add_generated_hypothesis(
+                final_generation_state["hypothesis"]
+            )
             self.state_manager.advance_hypothesis(kind="generated")
 
         # Now run through the review queue and perform deep verification
-        self.process_reflection_queue()
+        await self.process_reflection_queue()
         self.state_manager.update_proximity_graph_edges()
 
     async def evolve_hypotheses(self, n_hypotheses: int = 4) -> None:
@@ -324,7 +334,7 @@ class CoscientistFramework:
         randomly selects (n_hypotheses // 2) hypotheses to evolve.
         """
         assert n_hypotheses >= 2, "Must evolve at least two hypotheses"
-        assert self.state_manager.is_started, "Coscientist system must be started first"
+        assert self.state_manager.is_started, "NovaScientist system must be started first"
         evolution_candidate_uids = (
             self.state_manager.get_tournament_hypotheses_for_evolution()
         )
@@ -345,6 +355,7 @@ class CoscientistFramework:
         ).tolist()
 
         # Evolve the top ranked and random hypotheses based on feedback
+        tasks = []
         for uid in top_ranked_uids + random_uids:
             initial_evolution_state = self.state_manager.next_evolution_state(
                 mode="evolve_from_feedback", uid_to_evolve=uid
@@ -354,7 +365,10 @@ class CoscientistFramework:
                 mode="evolve_from_feedback",
                 llm=self.config.evolution_agent_llms[llm_name],
             )
-            final_evolution_state = evolution_agent.invoke(initial_evolution_state)
+            tasks.append(evolution_agent.ainvoke(initial_evolution_state))
+            
+        feedback_results = await asyncio.gather(*tasks)
+        for final_evolution_state in feedback_results:
             self.state_manager.add_evolved_hypothesis(
                 final_evolution_state["evolved_hypothesis"]
             )
@@ -370,7 +384,7 @@ class CoscientistFramework:
         evolution_agent = build_evolution_agent(
             mode="out_of_the_box", llm=self.config.evolution_agent_llms[llm_name]
         )
-        out_of_box_state = evolution_agent.invoke(out_of_box_initial_state)
+        out_of_box_state = await evolution_agent.ainvoke(out_of_box_initial_state)
         self.state_manager.add_evolved_hypothesis(
             out_of_box_state["evolved_hypothesis"]
         )
@@ -382,7 +396,7 @@ class CoscientistFramework:
         # already in the reflection queue but weren't advanced yet?
         # Do we always want to run reflection immediately after a hypothesis
         # is generated?
-        self.process_reflection_queue()
+        await self.process_reflection_queue()
 
         # Move the reviewed hypothesis to the EloTournament.
         self.state_manager.update_proximity_graph_edges()
@@ -417,7 +431,7 @@ class CoscientistFramework:
             top_k=k_bracket
         )
         meta_review_agent = build_meta_review_agent(self.config.meta_review_agent_llm)
-        final_meta_review_state = meta_review_agent.invoke(initial_meta_review_state)
+        final_meta_review_state = await meta_review_agent.ainvoke(initial_meta_review_state)
         self.state_manager.update_meta_review(final_meta_review_state)
 
     async def finish(self) -> None:
@@ -425,13 +439,13 @@ class CoscientistFramework:
         final_report_agent = build_final_report_agent(
             self.config.final_report_agent_llm
         )
-        final_report_state = final_report_agent.invoke(initial_final_report_state)
+        final_report_state = await final_report_agent.ainvoke(initial_final_report_state)
         self.state_manager.update_final_report(final_report_state)
 
     @classmethod
     def available_actions(self) -> list[str]:
         """
-        List the available actions for the Coscientist system.
+        List the available actions for the NovaScientist system.
         """
         return [
             "generate_new_hypotheses",
@@ -444,7 +458,7 @@ class CoscientistFramework:
 
     async def run(self) -> tuple[str, str]:
         """
-        Runs the coscientist system until it is finished.
+        Runs the novascientist system until it is finished.
         """
         # Start off with 4 hypotheses
         if not self.state_manager.is_started:
@@ -455,7 +469,7 @@ class CoscientistFramework:
         current_action = None
         while not self.state_manager.is_finished:
             initial_supervisor_state = self.state_manager.next_supervisor_state()
-            final_supervisor_state = supervisor_agent.invoke(initial_supervisor_state)
+            final_supervisor_state = await supervisor_agent.ainvoke(initial_supervisor_state)
             current_action = final_supervisor_state["action"]
             assert (
                 current_action in self.available_actions()

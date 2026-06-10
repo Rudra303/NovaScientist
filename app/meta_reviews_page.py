@@ -7,8 +7,8 @@ def display_meta_reviews_page(state):
 
     Parameters
     ----------
-    state : CoscientistState
-        The loaded Coscientist state containing meta-reviews
+    state : NovaScientistState
+        The loaded NovaScientist state containing meta-reviews
     """
     st.header("🔍 Meta-Reviews")
 

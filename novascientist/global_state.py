@@ -9,19 +9,19 @@ from typing import Literal, Optional, Union
 
 from langchain_core.language_models import BaseChatModel
 
-from coscientist.custom_types import ParsedHypothesis, ReviewedHypothesis
-from coscientist.evolution_agent import EvolveFromFeedbackState, OutOfTheBoxState
-from coscientist.final_report_agent import FinalReportState
-from coscientist.generation_agent import CollaborativeState, IndependentState
-from coscientist.literature_review_agent import LiteratureReviewState
-from coscientist.meta_review_agent import MetaReviewTournamentState
-from coscientist.proximity_agent import ProximityGraph
-from coscientist.ranking_agent import EloTournament
-from coscientist.reflection_agent import ReflectionState
-from coscientist.supervisor_agent import SupervisorDecisionState
+from novascientist.custom_types import ParsedHypothesis, ReviewedHypothesis
+from novascientist.evolution_agent import EvolveFromFeedbackState, OutOfTheBoxState
+from novascientist.final_report_agent import FinalReportState
+from novascientist.generation_agent import CollaborativeState, IndependentState
+from novascientist.literature_review_agent import LiteratureReviewState
+from novascientist.meta_review_agent import MetaReviewTournamentState
+from novascientist.proximity_agent import ProximityGraph
+from novascientist.ranking_agent import EloTournament
+from novascientist.reflection_agent import ReflectionState
+from novascientist.supervisor_agent import SupervisorDecisionState
 
 # Global configuration for output directory
-_OUTPUT_DIR = os.environ.get("COSCIENTIST_DIR", os.path.expanduser("~/.coscientist"))
+_OUTPUT_DIR = os.environ.get("NOVASCIENTIST_DIR", os.path.expanduser("~/.novascientist"))
 
 
 def _maybe_save(n: int = 1):
@@ -60,9 +60,9 @@ def _maybe_save(n: int = 1):
     return decorator
 
 
-class CoscientistState:
+class NovaScientistState:
     """
-    Global state for the Coscientist multi-agent system.
+    Global state for the NovaScientist multi-agent system.
 
     This class manages the outputs from all six main agents and provides
     persistence capabilities for the entire system state.
@@ -97,8 +97,8 @@ class CoscientistState:
         if os.path.exists(self._output_dir):
             raise FileExistsError(
                 f"Directory for goal already exists: {self._output_dir}\n"
-                f"Please use CoscientistState.load_latest(goal='{goal}') to resume, "
-                f"or call CoscientistState.clear_goal_directory('{goal}') to start fresh."
+                f"Please use NovaScientistState.load_latest(goal='{goal}') to resume, "
+                f"or call NovaScientistState.clear_goal_directory('{goal}') to start fresh."
             )
 
         # Create the directory
@@ -141,7 +141,7 @@ class CoscientistState:
         str
             First 12 characters of SHA256 hash of the normalized goal
         """
-        normalized_goal = CoscientistState._normalize_goal(goal)
+        normalized_goal = NovaScientistState._normalize_goal(goal)
         return hashlib.sha256(normalized_goal.encode("utf-8")).hexdigest()[:12]
 
     @classmethod
@@ -211,7 +211,7 @@ class CoscientistState:
         """
         # Generate filename with datetime and iteration
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"coscientist_state_{timestamp}_iter_{self._iteration:04d}.pkl"
+        filename = f"novascientist_state_{timestamp}_iter_{self._iteration:04d}.pkl"
         filepath = os.path.join(self._output_dir, filename)
 
         # Save state to pickle file
@@ -224,9 +224,9 @@ class CoscientistState:
         return filepath
 
     @classmethod
-    def load(cls, filepath: str) -> "CoscientistState":
+    def load(cls, filepath: str) -> "NovaScientistState":
         """
-        Load a CoscientistState from a pickle file.
+        Load a NovaScientistState from a pickle file.
 
         Parameters
         ----------
@@ -235,7 +235,7 @@ class CoscientistState:
 
         Returns
         -------
-        CoscientistState
+        NovaScientistState
             The loaded state object
         """
         with open(filepath, "rb") as f:
@@ -271,7 +271,7 @@ class CoscientistState:
             raise ValueError("Must specify either directory or goal parameter")
 
         if goal is not None:
-            goal_hash = CoscientistState._hash_goal(goal)
+            goal_hash = NovaScientistState._hash_goal(goal)
             search_directory = os.path.join(_OUTPUT_DIR, goal_hash)
         else:
             search_directory = directory
@@ -282,7 +282,7 @@ class CoscientistState:
         # Find all pickle files matching our naming pattern
         checkpoint_files = []
         for filename in os.listdir(search_directory):
-            if filename.startswith("coscientist_state_") and filename.endswith(".pkl"):
+            if filename.startswith("novascientist_state_") and filename.endswith(".pkl"):
                 filepath = os.path.join(search_directory, filename)
                 checkpoint_files.append(filepath)
 
@@ -294,7 +294,7 @@ class CoscientistState:
     @classmethod
     def load_latest(
         cls, directory: Optional[str] = None, goal: Optional[str] = None
-    ) -> Optional["CoscientistState"]:
+    ) -> Optional["NovaScientistState"]:
         """
         Load the most recent checkpoint from the directory.
 
@@ -307,7 +307,7 @@ class CoscientistState:
 
         Returns
         -------
-        Optional[CoscientistState]
+        Optional[NovaScientistState]
             The loaded state object, or None if no checkpoints found
 
         Raises
@@ -322,21 +322,21 @@ class CoscientistState:
         return cls.load(checkpoints[0])  # Load the newest checkpoint
 
 
-class CoscientistStateManager:
+class NovaScientistStateManager:
     """
-    Manager class for coordinating operations on CoscientistState.
+    Manager class for coordinating operations on NovaScientistState.
 
     This class provides higher-level operations for managing the flow
     of hypotheses through the multi-agent pipeline.
     """
 
-    def __init__(self, state: CoscientistState):
+    def __init__(self, state: NovaScientistState):
         """
-        Initialize the manager with a CoscientistState.
+        Initialize the manager with a NovaScientistState.
 
         Parameters
         ----------
-        state : CoscientistState
+        state : NovaScientistState
             The state object to manage
         """
         # This state should not be accessed directly. All the methods
@@ -353,7 +353,7 @@ class CoscientistStateManager:
     @property
     def is_started(self) -> bool:
         """
-        Check if the Coscientist system has started.
+        Check if the NovaScientist system has started.
         """
         # Completing the first meta-review signals that
         # the system has finished one full iteration.
@@ -362,14 +362,14 @@ class CoscientistStateManager:
     @property
     def is_finished(self) -> bool:
         """
-        Check if the Coscientist system has finished.
+        Check if the NovaScientist system has finished.
         """
         return self._state.final_report is not None
 
     @property
     def has_literature_review(self) -> bool:
         """
-        Check if the Coscientist system has completed the literature review.
+        Check if the NovaScientist system has completed the literature review.
         """
         return self._state.literature_review is not None
 

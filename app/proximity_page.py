@@ -138,7 +138,7 @@ def display_proximity_graph_page(state):
 
     if state is None:
         st.info(
-            "👈 Please select or upload a Coscientist state file from the sidebar to view the proximity graph."
+            "👈 Please select or upload a NovaScientist state file from the sidebar to view the proximity graph."
         )
         return
 

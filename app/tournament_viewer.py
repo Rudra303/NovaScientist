@@ -5,8 +5,8 @@ import streamlit as st
 # Import from modular pages
 from common import (
     get_available_states,
-    load_coscientist_state,
-    load_coscientist_state_by_goal,
+    load_novascientist_state,
+    load_novascientist_state_by_goal,
 )
 from configuration_page import display_configuration_page
 from final_report_page import display_final_report_page
@@ -17,10 +17,10 @@ from resume_page import display_resume_page
 from supervisor_page import display_supervisor_page
 from tournament_page import display_tournament_page
 
-st.set_page_config(page_title="Coscientist Viewer", page_icon="🧪", layout="wide")
+st.set_page_config(page_title="NovaScientist Viewer", page_icon="🧪", layout="wide")
 
 # Sidebar navigation
-st.sidebar.title("🧪 Coscientist Viewer")
+st.sidebar.title("🧪 NovaScientist Viewer")
 page = st.sidebar.selectbox(
     "Select Page",
     [
@@ -37,7 +37,7 @@ page = st.sidebar.selectbox(
 
 
 def main():
-    st.title("🧪 Coscientist Viewer")
+    st.title("🧪 NovaScientist Viewer")
 
     # Initialize session state for file selection
     if "current_file" not in st.session_state:
@@ -109,7 +109,7 @@ def main():
                 if selected_file != st.session_state.current_file:
                     st.session_state.current_file = selected_file
             else:
-                st.warning("No Coscientist research goals found.")
+                st.warning("No NovaScientist research goals found.")
                 selected_file = None
                 st.session_state.current_file = None
 
@@ -128,10 +128,10 @@ def main():
         if selected_file:
             # If it's a temp file (uploaded), use the original function
             if selected_file.startswith("temp_"):
-                state = load_coscientist_state(selected_file)
+                state = load_novascientist_state(selected_file)
             else:
                 # It's a goal text, use the new function
-                state = load_coscientist_state_by_goal(selected_file)
+                state = load_novascientist_state_by_goal(selected_file)
 
     # Display appropriate page based on navigation
     if page == "Configuration Agent":
@@ -139,7 +139,7 @@ def main():
     elif page == "Literature Review":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Literature Review Page
@@ -164,7 +164,7 @@ def main():
     elif page == "Tournament Rankings":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Tournament Rankings Page
@@ -189,7 +189,7 @@ def main():
     elif page == "Proximity Graph":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Proximity Graph Page
@@ -220,7 +220,7 @@ def main():
     elif page == "Meta-Reviews":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Meta-Reviews Page
@@ -245,7 +245,7 @@ def main():
     elif page == "Supervisor Decisions":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Supervisor Decisions Page
@@ -270,7 +270,7 @@ def main():
     elif page == "Final Report":
         if state is None:
             st.info(
-                "👈 Please select a research goal or upload a Coscientist state file from the sidebar to get started."
+                "👈 Please select a research goal or upload a NovaScientist state file from the sidebar to get started."
             )
             st.markdown("""
             ## Final Report Page

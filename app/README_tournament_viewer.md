@@ -1,6 +1,6 @@
-# Coscientist Viewer App
+# NovaScientist Viewer App
 
-A comprehensive Streamlit application for visualizing and exploring Coscientist research results, including tournament rankings and semantic proximity graphs.
+A comprehensive Streamlit application for visualizing and exploring NovaScientist research results, including tournament rankings and semantic proximity graphs.
 
 ## Features
 
@@ -34,7 +34,7 @@ streamlit run tournament_viewer.py
 
 ### Loading Data
 
-1. **Recent Files**: Select from automatically discovered Coscientist state files
+1. **Recent Files**: Select from automatically discovered NovaScientist state files
 2. **File Upload**: Upload a `.pkl` state file directly through the interface
 
 ### Navigation
@@ -62,7 +62,7 @@ Use the sidebar to switch between:
 
 ## Data Requirements
 
-The app expects Coscientist state files (`.pkl`) containing:
+The app expects NovaScientist state files (`.pkl`) containing:
 - **Tournament data**: For rankings and match analysis
 - **Proximity graph**: For semantic similarity visualization
 - **Reviewed hypotheses**: With detailed reasoning and predictions
@@ -123,7 +123,7 @@ app/
 ### File Format Requirements
 - State files must be valid Python pickle files
 - Must contain either tournament or proximity_graph data
-- Compatible with Coscientist framework output format
+- Compatible with NovaScientist framework output format
 
 ## Future Enhancements
 

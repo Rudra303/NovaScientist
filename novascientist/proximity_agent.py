@@ -9,7 +9,7 @@ import numpy as np
 from langchain_openai import OpenAIEmbeddings
 from sklearn.metrics.pairwise import cosine_similarity
 
-from coscientist.custom_types import ParsedHypothesis
+from novascientist.custom_types import ParsedHypothesis
 
 
 def create_embedding(text: str, dimensions: int = 256) -> np.ndarray:
