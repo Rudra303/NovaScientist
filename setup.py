@@ -8,7 +8,7 @@ setup(
     version="0.0.1",
     author="Rudra Pratap Singh",
     author_email="rudraofficial303@gmail.com",  # Add your email if you want to include it
-    description="Implementation of multi-agent system for AI co-scientist",
+    description="NovaScientist: A production-grade, multi-agent AI system for autonomous scientific research. Features an adaptive ML scheduler, FastAPI backend, and real-time Streamlit visualization to automatically generate, debate, and evolve high-quality hypotheses.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Rudra303/NovaScientist",

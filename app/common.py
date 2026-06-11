@@ -1,5 +1,10 @@
+import os
+import sys
 import pickle
 from typing import Optional
+
+# Ensure the parent directory is in the python path so imports work out-of-the-box
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 

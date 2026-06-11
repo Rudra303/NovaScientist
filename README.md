@@ -19,6 +19,7 @@ This implementation uses `Gemini 2.5 Pro`, `Claude Sonnet 4`, and `o3` in collab
 
 ### Tournament-Style Hypothesis Competition
 - **ELO Rating System**: Ranks hypotheses through head-to-head competitive analysis
+- **Predictive Early-Stopping**: ML-assisted pruning of underperforming tournament paths to save API costs
 - **Debate Transcripts**: Full records of why one hypothesis outperforms another
 - **Win-Loss Statistics**: Track performance across multiple evaluation rounds
 - **Hypothesis Evolution**: See how ideas improve through iterative refinement
@@ -35,12 +36,8 @@ This implementation uses `Gemini 2.5 Pro`, `Claude Sonnet 4`, and `o3` in collab
 - Python 3.12 or higher
 - A boatload of API keys
 
-### Install from PyPI (Coming Soon)
-```bash
-pip install NovaScientist
-```
+### Installation
 
-### Install from Source
 ```bash
 git clone https://github.com/conradry/NovaScientist.git
 cd NovaScientist

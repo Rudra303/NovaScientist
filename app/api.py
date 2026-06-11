@@ -14,6 +14,9 @@ app = FastAPI(
 
 # In-memory store of active jobs
 active_jobs: Dict[str, Any] = {}
+# Lock for active_jobs dictionary
+import threading
+jobs_lock = threading.Lock()
 
 class StartResearchRequest(BaseModel):
     goal: str
@@ -26,8 +29,9 @@ class RunTournamentRequest(BaseModel):
 @app.post("/api/v1/research/start")
 async def start_research(request: StartResearchRequest, background_tasks: BackgroundTasks):
     """Start a new research job for a given goal."""
-    if request.goal in active_jobs:
-        raise HTTPException(status_code=400, detail="Research for this goal is already running.")
+    with jobs_lock:
+        if request.goal in active_jobs:
+            raise HTTPException(status_code=400, detail="Research for this goal is already running.")
         
     try:
         initial_state = NovaScientistState(goal=request.goal)
@@ -39,10 +43,11 @@ async def start_research(request: StartResearchRequest, background_tasks: Backgr
     state_manager = NovaScientistStateManager(initial_state)
     framework = NovaScientistFramework(config, state_manager)
     
-    active_jobs[request.goal] = {
-        "status": "running",
-        "framework": framework
-    }
+    with jobs_lock:
+        active_jobs[request.goal] = {
+            "status": "running",
+            "framework": framework
+        }
     
     # Run the system in the background
     background_tasks.add_task(run_framework, request.goal, framework)
@@ -52,23 +57,29 @@ async def start_research(request: StartResearchRequest, background_tasks: Backgr
 async def run_framework(goal: str, framework: NovaScientistFramework):
     try:
         await framework.run()
-        active_jobs[goal]["status"] = "completed"
+        with jobs_lock:
+            active_jobs[goal]["status"] = "completed"
     except Exception as e:
-        active_jobs[goal]["status"] = f"failed: {str(e)}"
+        import logging
+        logging.error(f"Framework run failed: {e}")
+        with jobs_lock:
+            active_jobs[goal]["status"] = f"failed: {str(e)}"
 
 @app.get("/api/v1/research/status")
 async def get_status(goal: str):
     """Get the status of a running research job."""
-    if goal in active_jobs:
-        return {"goal": goal, "status": active_jobs[goal]["status"]}
+    with jobs_lock:
+        if goal in active_jobs:
+            return {"goal": goal, "status": active_jobs[goal]["status"]}
     
     # If not in active jobs, check if it exists in the output directory
     try:
         state = NovaScientistState.load_latest(goal=goal)
         if state:
             return {"goal": goal, "status": "exists_on_disk", "is_finished": state.final_report is not None}
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to load state: {e}")
         
     raise HTTPException(status_code=404, detail="Goal not found")
 

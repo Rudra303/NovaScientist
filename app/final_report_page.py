@@ -72,8 +72,8 @@ def display_final_report_page(state):
                         st.write(
                             f"• Max ELO Rating: {tournament_stats.get('max_elo_rating', ['N/A'])[0] if tournament_stats.get('max_elo_rating') else 'N/A'}"
                         )
-                    except:  # noqa: E722
-                        st.write("• Tournament statistics unavailable")
+                    except Exception as e:
+                        st.error(f"Tournament statistics unavailable: {e}")
 
     else:
         st.error("Final report exists but contains no content.")

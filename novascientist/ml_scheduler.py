@@ -17,6 +17,7 @@ class MultiArmedBanditScheduler:
         self.counts = defaultdict(int)
         self.values = defaultdict(float)
         self.total_pulls = 0
+        self._lock = __import__("threading").Lock()
         self._load_history()
 
     def _load_history(self):
@@ -27,8 +28,12 @@ class MultiArmedBanditScheduler:
                     self.counts = defaultdict(int, data.get('counts', {}))
                     self.values = defaultdict(float, data.get('values', {}))
                     self.total_pulls = data.get('total_pulls', 0)
-            except Exception:
-                pass
+            except json.JSONDecodeError as e:
+                import logging
+                logging.error(f"Failed to decode bandit history: {e}")
+            except OSError as e:
+                import logging
+                logging.error(f"Failed to read bandit history: {e}")
 
     def _save_history(self):
         os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
@@ -62,16 +67,17 @@ class MultiArmedBanditScheduler:
         """
         Updates the value of an arm based on observed reward (e.g., ELO score improvement).
         """
-        self.counts[arm] += 1
-        self.total_pulls += 1
-        
-        n = self.counts[arm]
-        value = self.values[arm]
-        # Incremental mean update
-        new_value = ((n - 1) * value + reward) / n
-        self.values[arm] = new_value
-        
-        self._save_history()
+        with self._lock:
+            self.counts[arm] += 1
+            self.total_pulls += 1
+            
+            n = self.counts[arm]
+            value = self.values[arm]
+            # Incremental mean update
+            new_value = ((n - 1) * value + reward) / n
+            self.values[arm] = new_value
+            
+            self._save_history()
 
     def get_strategy(self, modes: list[str], reasoning_types: list[str]) -> Tuple[str, str]:
         """

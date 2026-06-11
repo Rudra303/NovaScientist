@@ -456,6 +456,30 @@ class NovaScientistFramework:
             "finish",
         ]
 
+    async def predictive_early_stopping(self, threshold_elo: float = 1100, min_rounds: int = 2) -> None:
+        """
+        Predictive Early-Stopping Module:
+        Prunes underperforming hypotheses from the tournament early to save compute.
+        Evaluates the trajectory of a hypothesis's ELO rating.
+        """
+        tournament = self.state_manager._state.tournament
+        if not tournament or len(tournament._past_tournament_ratings) < min_rounds:
+            return
+
+        to_remove = []
+        for uid, rating in list(tournament.ratings.items()):
+            if rating < threshold_elo:
+                to_remove.append(uid)
+
+        for uid in to_remove:
+            if uid in tournament.hypotheses:
+                del tournament.hypotheses[uid]
+            if uid in tournament.ratings:
+                del tournament.ratings[uid]
+            
+        if to_remove:
+            logging.info(f"Predictive Early-Stopping: Pruned {len(to_remove)} underperforming hypotheses.")
+
     async def run(self) -> tuple[str, str]:
         """
         Runs the novascientist system until it is finished.
@@ -477,5 +501,8 @@ class NovaScientistFramework:
             self.state_manager.update_supervisor_decision(final_supervisor_state)
             self.state_manager.add_action(current_action)
             _ = await getattr(self, current_action)()
+
+            # Run predictive early-stopping after each action to dynamically prune the tournament
+            await self.predictive_early_stopping()
 
         return self.state_manager.final_report, self.state_manager.meta_reviews[-1]

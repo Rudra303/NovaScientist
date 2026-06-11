@@ -119,8 +119,8 @@ def display_meta_reviews_page(state):
                         try:
                             win_loss_records = tournament.get_win_loss_records()
                             st.write(f"• Ranked Hypotheses: {len(win_loss_records)}")
-                        except:  # noqa: E722
-                            st.write("• Tournament statistics unavailable")
+                        except (AttributeError, ValueError, TypeError) as e:
+                            st.write(f"• Tournament statistics unavailable: {e}")
                     else:
                         st.write("• Tournament data not available")
         else:

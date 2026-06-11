@@ -1,6 +1,9 @@
 import os
-
+import sys
+import langchain_core.documents.base
 import streamlit as st
+# Ensure the parent directory is in the python path so imports work out-of-the-box
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from modular pages
 from common import (
