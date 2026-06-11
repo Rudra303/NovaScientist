@@ -1,6 +1,8 @@
 import os
 import sys
 import langchain_core.documents.base
+from dotenv import load_dotenv
+load_dotenv()
 import streamlit as st
 # Ensure the parent directory is in the python path so imports work out-of-the-box
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,8 +21,17 @@ from proximity_page import display_proximity_graph_page
 from resume_page import display_resume_page
 from supervisor_page import display_supervisor_page
 from tournament_page import display_tournament_page
+from ui_theme import apply_custom_theme
 
-st.set_page_config(page_title="NovaScientist Viewer", page_icon="🧪", layout="wide")
+st.set_page_config(
+    page_title="NovaScientist Viewer",
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Apply global premium AI theme
+apply_custom_theme()
 
 # Sidebar navigation
 st.sidebar.title("🧪 NovaScientist Viewer")

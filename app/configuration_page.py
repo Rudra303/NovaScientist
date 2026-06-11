@@ -24,14 +24,14 @@ from novascientist.global_state import NovaScientistState
 def get_llm_options():
     """Get available LLM options for the chat interface."""
     return {
-        "o3": ChatOpenAI(model="o3", max_tokens=5000, max_retries=3),
-        "Gemini 2.5 Pro": ChatGoogleGenerativeAI(
+        "o3": lambda: ChatOpenAI(model="o3", max_tokens=5000, max_retries=3),
+        "Gemini 2.5 Pro": lambda: ChatGoogleGenerativeAI(
             model="gemini-2.5-pro",
             temperature=1.0,
             max_retries=3,
             max_tokens=5000,
         ),
-        "Claude Sonnet 4": ChatAnthropic(
+        "Claude Sonnet 4": lambda: ChatAnthropic(
             model="claude-sonnet-4-20250514", max_tokens=5000, max_retries=3
         ),
     }
@@ -82,7 +82,7 @@ def display_configuration_page():
         selected_model = st.selectbox(
             "Select Language Model:",
             options=list(llm_options.keys()),
-            index=1,  # Default to GPT-4o-mini
+            index=1,  # Default to Gemini
             help="Choose the language model for the configuration agent.",
         )
 
@@ -91,7 +91,8 @@ def display_configuration_page():
             if initial_goal.strip():
                 try:
                     with st.spinner("Initializing conversation..."):
-                        llm = llm_options[selected_model]
+                        llm_factory = llm_options[selected_model]
+                        llm = llm_factory()
                         st.session_state.chat_manager = ConfigurationChatManager(
                             llm, initial_goal.strip()
                         )

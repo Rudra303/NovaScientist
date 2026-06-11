@@ -33,28 +33,28 @@ from novascientist.ml_scheduler import MultiArmedBanditScheduler
 
 # Generally reasoning models are better suited for the scientific reasoning
 # tasks entailed by the NovaScientist system.
-_SMARTER_LLM_POOL = {
-    "o3": ChatOpenAI(model="o3", max_tokens=50_000, max_retries=3),
-    "gemini-2.5-pro": ChatGoogleGenerativeAI(
+_SMARTER_LLM_POOL_FACTORIES = {
+    "o3": lambda: ChatOpenAI(model="o3", max_tokens=50_000, max_retries=3),
+    "gemini-2.5-pro": lambda: ChatGoogleGenerativeAI(
         model="gemini-2.5-pro",
         temperature=1.0,
         max_retries=3,
         max_tokens=50_000,
     ),
-    "claude-sonnet-4-20250514": ChatAnthropic(
+    "claude-sonnet-4-20250514": lambda: ChatAnthropic(
         model="claude-sonnet-4-20250514", max_tokens=50_000, max_retries=3
     ),
 }
-_CHEAPER_LLM_POOL = {
-    "o4-mini": ChatOpenAI(model="o4-mini", max_tokens=50_000, max_retries=3),
-    "gemini-2.5-flash": ChatGoogleGenerativeAI(
+_CHEAPER_LLM_POOL_FACTORIES = {
+    "o4-mini": lambda: ChatOpenAI(model="o4-mini", max_tokens=50_000, max_retries=3),
+    "gemini-2.5-flash": lambda: ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         temperature=1.0,
         max_retries=3,
         max_tokens=50_000,
     ),
     # Anthropic doesn't have a good cheaper model
-    "claude-sonnet-4-20250514": ChatAnthropic(
+    "claude-sonnet-4-20250514": lambda: ChatAnthropic(
         model="claude-sonnet-4-20250514", max_tokens=50_000, max_retries=3
     ),
 }
@@ -91,33 +91,27 @@ class NovaScientistConfig:
 
     def __init__(
         self,
-        literature_review_agent_llm: BaseChatModel = _SMARTER_LLM_POOL[
-            "claude-sonnet-4-20250514"
-        ],
-        generation_agent_llms: dict[str, BaseChatModel] = _SMARTER_LLM_POOL,
-        reflection_agent_llms: dict[str, BaseChatModel] = _SMARTER_LLM_POOL,
-        evolution_agent_llms: dict[str, BaseChatModel] = _SMARTER_LLM_POOL,
-        meta_review_agent_llm: BaseChatModel = _CHEAPER_LLM_POOL["gemini-2.5-flash"],
-        supervisor_agent_llm: BaseChatModel = _SMARTER_LLM_POOL[
-            "claude-sonnet-4-20250514"
-        ],
-        final_report_agent_llm: BaseChatModel = _SMARTER_LLM_POOL[
-            "claude-sonnet-4-20250514"
-        ],
-        proximity_agent_embedding_model: Embeddings = OpenAIEmbeddings(
-            model="text-embedding-3-small", dimensions=256
-        ),
+        literature_review_agent_llm: BaseChatModel | None = None,
+        generation_agent_llms: dict[str, BaseChatModel] | None = None,
+        reflection_agent_llms: dict[str, BaseChatModel] | None = None,
+        evolution_agent_llms: dict[str, BaseChatModel] | None = None,
+        meta_review_agent_llm: BaseChatModel | None = None,
+        supervisor_agent_llm: BaseChatModel | None = None,
+        final_report_agent_llm: BaseChatModel | None = None,
+        proximity_agent_embedding_model: Embeddings | None = None,
         specialist_fields: list[str] | None = None,
     ):
         # TODO: Add functionality for overriding GPTResearcher config.
-        self.literature_review_agent_llm = literature_review_agent_llm
-        self.generation_agent_llms = generation_agent_llms
-        self.reflection_agent_llms = reflection_agent_llms
-        self.evolution_agent_llms = evolution_agent_llms
-        self.meta_review_agent_llm = meta_review_agent_llm
-        self.supervisor_agent_llm = supervisor_agent_llm
-        self.proximity_agent_embedding_model = proximity_agent_embedding_model
-        self.final_report_agent_llm = final_report_agent_llm
+        self.literature_review_agent_llm = literature_review_agent_llm or _SMARTER_LLM_POOL_FACTORIES["claude-sonnet-4-20250514"]()
+        self.generation_agent_llms = generation_agent_llms or {k: v() for k, v in _SMARTER_LLM_POOL_FACTORIES.items()}
+        self.reflection_agent_llms = reflection_agent_llms or {k: v() for k, v in _SMARTER_LLM_POOL_FACTORIES.items()}
+        self.evolution_agent_llms = evolution_agent_llms or {k: v() for k, v in _SMARTER_LLM_POOL_FACTORIES.items()}
+        self.meta_review_agent_llm = meta_review_agent_llm or _CHEAPER_LLM_POOL_FACTORIES["gemini-2.5-flash"]()
+        self.supervisor_agent_llm = supervisor_agent_llm or _SMARTER_LLM_POOL_FACTORIES["claude-sonnet-4-20250514"]()
+        self.proximity_agent_embedding_model = proximity_agent_embedding_model or OpenAIEmbeddings(
+            model="text-embedding-3-small", dimensions=256
+        )
+        self.final_report_agent_llm = final_report_agent_llm or _SMARTER_LLM_POOL_FACTORIES["claude-sonnet-4-20250514"]()
         if specialist_fields is None:
             self.specialist_fields = ["biology"]
         else:
